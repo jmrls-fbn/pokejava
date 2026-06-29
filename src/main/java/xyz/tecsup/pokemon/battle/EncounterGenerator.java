@@ -14,7 +14,7 @@ public class EncounterGenerator {
     // Probabilidad de encuentro por cada tile de hierba pisado (0-100).
     // 15 significa ~15% de chance cada vez que se entra a un tile nuevo de hierba
     // (no en cada frame — GamePanel solo llama esto cuando Player.hasEnteredNewTile() es true)
-    private static final int ENCOUNTER_PROBABILITY = 15;
+    private static final int ENCOUNTER_PROBABILITY = 5;
 
     // Tira un dado de 0-99 y compara contra el umbral de probabilidad.
     public boolean tryEncounter() {
