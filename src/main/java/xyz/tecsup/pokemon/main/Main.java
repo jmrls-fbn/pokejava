@@ -8,7 +8,6 @@ import java.sql.SQLException;
 
 public class Main {
 
-    // Referencias globales para poder cambiar de panel desde cualquier parte
     public static CardLayout cardLayout;
     public static JPanel panelContainer;
     public static GamePanel gamePanel;
@@ -16,12 +15,9 @@ public class Main {
 
     public static void main(String[] args) {
 
-        // TODO: arranca directo en GamePanel con GameSession.playerId fijo.
-        // Falta mostrar primero StartScreen para crear/elegir el jugador real
-        // (quedó pausado para priorizar el sistema de combate).
         // Falla rápido y con un mensaje claro si la base de datos no está
         // disponible, en vez de abrir la ventana y recién explotar en la
-        // primera batalla/consulta.
+        // primera consulta (StartScreen necesita la BD para listar partidas).
         try (var con = DatabaseConfig.getConnection()) {
             System.out.println("Conexión a la base de datos exitosa.");
         } catch (SQLException e) {
@@ -29,12 +25,33 @@ public class Main {
             return;
         }
 
+        showStartScreen();
+    }
+
+    // Crea y muestra la ventana de StartScreen (elegir/crear partida).
+    // Usado tanto al arrancar el programa como al presionar "Reiniciar".
+    public static void showStartScreen() {
+        JFrame startWindow = new JFrame();
+        startWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        startWindow.setResizable(false);
+        startWindow.setTitle("Pokémon - Tecsup (Java Edition)");
+
+        StartScreen startScreen = new StartScreen();
+        startWindow.add(startScreen.getPanel());
+
+        startWindow.pack();
+        startWindow.setLocationRelativeTo(null);
+        startWindow.setVisible(true);
+    }
+
+    // Construye y muestra la ventana principal del juego (mapa + batalla).
+    // Llamado por StartScreen una vez que ya existe un GameSession.playerId válido.
+    public static void startMainWindow() {
         window = new JFrame();
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setResizable(false);
         window.setTitle("Pokémon - Tecsup (Java Edition)");
 
-        // Contenedor con CardLayout para cambiar entre mapa y batalla
         cardLayout = new CardLayout();
         panelContainer = new JPanel(cardLayout);
 
@@ -52,13 +69,11 @@ public class Main {
         gamePanel.requestFocusInWindow();
     }
 
-    // Cambia al panel de batalla, agregándolo dinámicamente
     public static void showBattle(javax.swing.JPanel battlePanel) {
         panelContainer.add(battlePanel, "battle");
         cardLayout.show(panelContainer, "battle");
     }
 
-    // Vuelve al mapa
     public static void returnToMap() {
         cardLayout.show(panelContainer, "map");
         gamePanel.requestFocusInWindow();

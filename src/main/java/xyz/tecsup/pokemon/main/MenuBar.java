@@ -4,8 +4,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 import xyz.tecsup.pokemon.repository.PlayerRepository;
 import xyz.tecsup.pokemon.repository.PokemonRepository;
@@ -39,20 +37,15 @@ public class MenuBar extends JMenuBar {
         JMenuItem volumeItem = new JMenuItem("Volumen");
 
         // Acción de Controles (Ventana emergente)
-        controlsItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                JOptionPane.showMessageDialog(null,
-                        """
-                                Controles del Emulador:
+        controlsItem.addActionListener(e -> JOptionPane.showMessageDialog(null,
+                """
+                        Controles del Emulador:
 
-                                • Movimiento: Flechas del teclado o WASD
-                                • Interactuar / Aceptar: Tecla ESPACIO
-                                • Menú / Cancelar: Tecla ESCAPE""",
-                        "Controles",
-                        JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
+                        • Movimiento: Flechas del teclado o WASD
+                        • Interactuar / Aceptar: Tecla ESPACIO
+                        • Menú / Cancelar: Tecla ESCAPE""",
+                "Controles",
+                JOptionPane.INFORMATION_MESSAGE));
 
         helpMenu.add(controlsItem);
 
@@ -61,21 +54,11 @@ public class MenuBar extends JMenuBar {
         JMenuItem pokemonListItem = new JMenuItem("Lista de Pokémon");
 
         JMenuItem teamItem = new JMenuItem("Mi Equipo");
-        teamItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showTeam();
-            }
-        });
+        teamItem.addActionListener(e -> showTeam());
 
         databaseMenu.add(teamItem);
 
-        pokemonListItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showPokemonList();
-            }
-        });
+        pokemonListItem.addActionListener(e -> showPokemonList());
 
         databaseMenu.add(pokemonListItem);
 
@@ -137,21 +120,23 @@ public class MenuBar extends JMenuBar {
         JMenuItem restartItem = new JMenuItem("Reiniciar");
         JMenuItem exitItem = new JMenuItem("Salir");
 
-        // Acción de Reiniciar
-        restartItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                gamePanel.restartGame(); // Le avisa al panel que reinicie
-            }
+        // Cierra la ventana del mapa y vuelve a StartScreen, para elegir o
+        // crear otra partida sin tener que cerrar y volver a ejecutar Main.
+        restartItem.addActionListener(e -> {
+            JFrame currentWindow = (JFrame) SwingUtilities.getWindowAncestor(this);
+            currentWindow.dispose();
+            Main.showStartScreen();
+        });
+
+        restartItem.addActionListener(e -> {
+            gamePanel.stopGame();
+            JFrame currentWindow = (JFrame) SwingUtilities.getWindowAncestor(this);
+            currentWindow.dispose();
+            Main.showStartScreen();
         });
 
         // Acción de Salir
-        exitItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.exit(0); // Cierra el programa de forma segura
-            }
-        });
+        exitItem.addActionListener(e -> System.exit(0));
 
         gameMenu.add(restartItem);
         gameMenu.addSeparator(); // Línea divisoria estética
