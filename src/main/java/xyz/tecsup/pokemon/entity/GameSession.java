@@ -1,8 +1,8 @@
 package xyz.tecsup.pokemon.entity;
 
+// Almacena qué jugador está activo durante la sesión actual de juego.
+// Asignado dinámicamente por StartScreen, ya sea al crear una partida
+// nueva o al cargar una existente del desplegable.
 public class GameSession {
-    // Jugador activo durante toda la partida — fijo por ahora para pruebas
-    // (id 1 = Ash en player.csv, ver db/init/04_seed.sql)
-    // TODO: reemplazar por el id real una vez que StartScreen esté conectada a Main.
-    public static int playerId = 1;
+    public static int playerId;
 }

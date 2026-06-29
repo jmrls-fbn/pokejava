@@ -1,21 +1,22 @@
 package xyz.tecsup.pokemon.main;
 
+import xyz.tecsup.pokemon.sounds.AudioManager;
+import xyz.tecsup.pokemon.battle.BattleTrigger;
 import xyz.tecsup.pokemon.control.KeyHandler;
-import xyz.tecsup.pokemon.battle.BattlePanel;
-import xyz.tecsup.pokemon.battle.EncounterGenerator;
-import xyz.tecsup.pokemon.repository.PlayerRepository;
-import xyz.tecsup.pokemon.repository.PokemonRepository;
 import xyz.tecsup.pokemon.entity.Player;
-import xyz.tecsup.pokemon.entity.Pokemon;
-import xyz.tecsup.pokemon.entity.GameSession;
 import xyz.tecsup.pokemon.map.CollisionChecker;
+import xyz.tecsup.pokemon.map.GrassAnimation;
 import xyz.tecsup.pokemon.map.MapReader;
 import xyz.tecsup.pokemon.map.MapRenderer;
 
 import javax.swing.JPanel;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
+// Panel del mapa. Coordina el game loop (60 FPS), el dibujado por capas,
+// la cámara que sigue al jugador con límites, y delega a BattleTrigger
+// la decisión de cuándo iniciar un combate.
 public class GamePanel extends JPanel implements Runnable {
 
     private final int TILE_ORIGINAL_SIZE = 16;
@@ -39,9 +40,11 @@ public class GamePanel extends JPanel implements Runnable {
     private final MapRenderer mapRenderer;
     private CollisionChecker collisionChecker;
 
-    // Sistema de encuentros en hierba alta
-    private final EncounterGenerator encounterGenerator = new EncounterGenerator();
-    private boolean inBattle = false; // evita disparar batallas mientras ya hay una activa
+    private final BattleTrigger battleTrigger = new BattleTrigger();
+
+    // Animaciones de hierba activas en este momento (normalmente 0 o 1,
+    // pero se permite una lista por si en el futuro hay varias a la vez)
+    private final List<GrassAnimation> grassAnimations = new ArrayList<>();
 
     public GamePanel() {
         this.setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
@@ -62,12 +65,22 @@ public class GamePanel extends JPanel implements Runnable {
         collisionChecker = new CollisionChecker(mapReader);
         player.setCollisionChecker(collisionChecker);
 
+        AudioManager.playMusic("/PokemonOST/Route.wav", -12f);
+
         startCounter();
     }
 
     public synchronized void startCounter() {
         gameThread = new Thread(this);
         gameThread.start();
+    }
+
+    // Detiene el hilo del game loop y la música de fondo. Se llama antes de
+    // cerrar la ventana del mapa (botón "Reiniciar" o al volver a StartScreen),
+    // para que no sigan corriendo en segundo plano sobre una ventana ya cerrada.
+    public void stopGame() {
+        gameThread = null; // el bucle en run() termina solo en su próxima vuelta
+        AudioManager.stopMusic();
     }
 
     @Override
@@ -91,61 +104,29 @@ public class GamePanel extends JPanel implements Runnable {
     }
 
     public void update() {
-        if (inBattle) return; // pausar el mapa mientras hay batalla activa
+        if (battleTrigger.isInBattle()) return; // pausar el mapa mientras hay batalla activa
 
         player.update();
-        checkEncounter();
+        battleTrigger.checkEncounter(player, collisionChecker, TILE_SIZE);
+        checkGrassAnimation();
+        updateGrassAnimations();
     }
 
-    // Revisa si el jugador entró a hierba alta en un nuevo tile y dispara la batalla
-    private void checkEncounter() {
+    // Si el jugador acaba de entrar a un tile nuevo y ese tile es hierba alta,
+    // inicia una animación de hojas sobre ese tile específico.
+    private void checkGrassAnimation() {
         if (!player.hasEnteredNewTile()) return;
+        if (!collisionChecker.isInTallGrass(player.worldX, player.worldY, TILE_SIZE)) return;
 
-        boolean inGrass = collisionChecker.isInTallGrass(player.worldX, player.worldY, TILE_SIZE);
-        if (!inGrass) return;
-
-        if (encounterGenerator.tryEncounter()) {
-            startBattle();
-        }
+        int tileX = (player.worldX + TILE_SIZE / 2) / TILE_SIZE;
+        int tileY = (player.worldY + TILE_SIZE - 8) / TILE_SIZE;
+        grassAnimations.add(new GrassAnimation(tileX, tileY));
     }
 
-    // Construye los Pokémon y cambia al panel de batalla
-    private void startBattle() {
-        inBattle = true;
-
-        PlayerRepository playerRepository = new PlayerRepository();
-        PokemonRepository pokemonRepository = new PokemonRepository();
-
-        List<Object[]> team = playerRepository.getTeam(GameSession.playerId);
-        if (team.isEmpty()) {
-            inBattle = false;
-            return;
-        }
-
-        // Cargar TODO el equipo, no solo el primero
-        List<Pokemon> playerTeam = new java.util.ArrayList<>();
-        for (Object[] row : team) {
-            int pokemonId = getPokemonIdFromRow(row);
-            int level = (int) row[2];
-            Pokemon pokemon = pokemonRepository.getById(pokemonId, level);
-            playerTeam.add(pokemon);
-        }
-
-        int averageLevel = playerRepository.getAverageTeamLevel(GameSession.playerId);
-        Pokemon enemyPokemon = encounterGenerator.generateEnemy(averageLevel);
-
-        BattlePanel battlePanel = new BattlePanel(playerTeam, enemyPokemon);
-        battlePanel.setOnBattleEnd(won -> {
-            inBattle = false;
-            Main.returnToMap();
-        });
-
-        Main.showBattle(battlePanel);
-    }
-
-    // Auxiliar para obtener el pokemon_id real (la fila de getTeam lo trae en el índice 4)
-    private int getPokemonIdFromRow(Object[] row) {
-        return (int) row[4];
+    // Avanza todas las animaciones activas y elimina las que ya terminaron
+    private void updateGrassAnimations() {
+        grassAnimations.forEach(GrassAnimation::update);
+        grassAnimations.removeIf(GrassAnimation::isFinished);
     }
 
     @Override
@@ -174,15 +155,14 @@ public class GamePanel extends JPanel implements Runnable {
 
         mapRenderer.drawGrassTile(g2, player.worldX, player.worldY, camX, camY, TILE_SIZE);
 
+        // Animaciones de hierba encima del jugador (mismo nivel visual que la hierba alta)
+        for (GrassAnimation anim : grassAnimations) {
+            anim.draw(g2, camX, camY, TILE_SIZE);
+        }
+
         mapRenderer.drawLayer(g2, mapReader.getRoofLayer(),  camX, camY, SCREEN_WIDTH, SCREEN_HEIGHT, TILE_SIZE);
         mapRenderer.drawLayer(g2, mapReader.getRoofLayer2(), camX, camY, SCREEN_WIDTH, SCREEN_HEIGHT, TILE_SIZE);
 
         g2.dispose();
-    }
-
-    public void restartGame() {
-        player           = new Player(keyHandler, TILE_SIZE);
-        collisionChecker = new CollisionChecker(mapReader);
-        player.setCollisionChecker(collisionChecker);
     }
 }
