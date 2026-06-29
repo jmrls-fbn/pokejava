@@ -2,6 +2,7 @@ package xyz.tecsup.pokemon.entity;
 
 import xyz.tecsup.pokemon.control.KeyHandler;
 import xyz.tecsup.pokemon.map.CollisionChecker;
+import xyz.tecsup.pokemon.sounds.AudioManager;
 import java.awt.*;
 
 // Representa al personaje controlado por el usuario.
@@ -50,14 +51,31 @@ public class Player {
         if (keyHandler.left)  { direction = 1; newX -= speed; moving = true; }
         if (keyHandler.right) { direction = 2; newX += speed; moving = true; }
 
-        // Solo aplicar el movimiento si no hay colisión en la posición destino
-        if (moving && (collisionChecker == null || !collisionChecker.hasCollision(newX, newY, TILE_SIZE))) {
-            worldX = newX;
-            worldY = newY;
+        if (moving) {
+            boolean blocked = collisionChecker != null && collisionChecker.hasCollision(newX, newY, TILE_SIZE);
+
+            if (!blocked) {
+                worldX = newX;
+                worldY = newY;
+            } else {
+                // El jugador intentó moverse pero hay un obstáculo: sonido de choque.
+                // Se reproduce aquí (no en cada frame repetido) gracias al chequeo de newTile más abajo.
+                playCollisionSoundOnce();
+            }
         }
 
         detectTileChange();
         animation.update(moving);
+    }
+
+    // Evita que el sonido de colisión se repita en cada frame mientras el jugador
+    // mantiene presionada la tecla contra el muro — solo suena una vez por intento.
+    private boolean wasBlockedLastFrame = false;
+    private void playCollisionSoundOnce() {
+        if (!wasBlockedLastFrame) {
+            AudioManager.playSoundEffect("/Sounds/Collision.wav");
+        }
+        wasBlockedLastFrame = true;
     }
 
     // Compara la posición actual contra la del frame anterior para saber
@@ -71,6 +89,13 @@ public class Player {
             lastTileX = currentTileX;
             lastTileY = currentTileY;
             newTile = true;
+            wasBlockedLastFrame = false; // se movió con éxito, resetea el flag de colisión
+
+            // Sonido de paso al entrar a hierba alta. Se reproduce aquí en Player
+            // en lugar de GamePanel porque es lo más cercano a "el jugador pisó algo".
+            if (collisionChecker != null && collisionChecker.isInTallGrass(worldX, worldY, TILE_SIZE)) {
+                AudioManager.playSoundEffect("/Sounds/GrassStep.wav");
+            }
         } else {
             newTile = false;
         }

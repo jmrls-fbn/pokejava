@@ -16,8 +16,6 @@ public class PlayerRepository {
     // Crea un jugador nuevo junto con su Pokémon inicial.
     // Usado por StartScreen.java cuando el jugador eligió nombre/género/inicial
     // por primera vez.
-    // TODO: StartScreen actualmente NO está conectada a Main — se dejó pausada
-    // para priorizar el sistema de combate, ver nota en Main.java.
     // Devuelve el id autogenerado del nuevo jugador, o -1 si falló.
     public int createPlayer(String name, String gender, int initialPokemonId) {
         String playerSql = "INSERT INTO player (name, gender) VALUES (?, ?)";
@@ -39,6 +37,50 @@ public class PlayerRepository {
             System.out.println("Error creando jugador: " + e.getMessage());
         }
         return -1;
+    }
+
+    // Borra un jugador y todo su equipo de Pokémon (player_pokemon primero,
+    // por la foreign key, luego el jugador). Usado por StartScreen cuando
+    // el usuario presiona "Borrar Partida" en una partida del desplegable.
+    // Devuelve true si se borró correctamente.
+    public boolean deletePlayer(int playerId) {
+        String deleteTeamSql = "DELETE FROM player_pokemon WHERE player_id = ?";
+        String deletePlayerSql = "DELETE FROM player WHERE id = ?";
+
+        try (Connection con = DatabaseConfig.getConnection()) {
+            try (PreparedStatement ps = con.prepareStatement(deleteTeamSql)) {
+                ps.setInt(1, playerId);
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = con.prepareStatement(deletePlayerSql)) {
+                ps.setInt(1, playerId);
+                ps.executeUpdate();
+            }
+            return true;
+        } catch (SQLException e) {
+            System.out.println("Error borrando jugador: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Devuelve todas las partidas guardadas (id, name) para llenar el desplegable
+    // de "Cargar Partida" en StartScreen. Ordenadas por id para que las más
+    // antiguas aparezcan primero.
+    public List<Object[]> getAllPlayers() {
+        List<Object[]> list = new ArrayList<>();
+        String sql = "SELECT id, name FROM player ORDER BY id";
+
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                list.add(new Object[]{ rs.getInt("id"), rs.getString("name") });
+            }
+        } catch (SQLException e) {
+            System.out.println("Error consultando partidas guardadas: " + e.getMessage());
+        }
+        return list;
     }
 
     // Devuelve los Pokémon del equipo activo de un jugador (team_slot IS NOT NULL),
@@ -84,9 +126,9 @@ public class PlayerRepository {
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, playerId);
             ps.setInt(2, pokemonId);
-            ps.setInt(3, 5);   // nivel inicial fijo
-            ps.setInt(4, 999); // HACK: placeholder, ver nota arriba
-            ps.setInt(5, 1);   // primer espacio del equipo
+            ps.setInt(3, 32);
+            ps.setInt(4, 999);
+            ps.setInt(5, 1);
             ps.executeUpdate();
         }
     }
@@ -108,6 +150,6 @@ public class PlayerRepository {
         } catch (SQLException e) {
             System.out.println("Error calculando nivel promedio: " + e.getMessage());
         }
-        return 5; // valor de respaldo si la consulta falla o el jugador no tiene equipo
+        return 5;
     }
 }
