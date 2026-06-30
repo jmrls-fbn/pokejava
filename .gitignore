@@ -1,5 +1,12 @@
 target/
-.env
 *.iml
 .idea/
 *.class
+
+# Base de datos SQLite generada en el primer arranque (datos de partidas locales).
+# El patrón cubre el archivo temporal de construcción (.tmp) y los auxiliares
+# de SQLite (-journal, -wal, -shm).
+pokemon.db*
+
+# Generado por maven-shade-plugin durante el package
+dependency-reduced-pom.xml

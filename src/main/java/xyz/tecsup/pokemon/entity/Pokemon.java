@@ -3,7 +3,7 @@ package xyz.tecsup.pokemon.entity;
 import java.util.List;
 
 // Representa un Pokémon ya cargado en memoria, listo para usarse en batalla.
-// Se construye normalmente desde PokemonRepository, que llena estos datos consultando MySQL.
+// Se construye normalmente desde PokemonRepository, que llena estos datos consultando SQLite.
 public class Pokemon {
 
     // Datos fijos de la especie: vienen de la base de datos y nunca cambian

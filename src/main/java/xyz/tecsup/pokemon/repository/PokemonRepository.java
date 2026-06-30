@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // Repository de Pokémon.
-// Su única responsabilidad es traducir filas de Postgres en objetos Pokemon/Move.
+// Su única responsabilidad es traducir filas de SQLite en objetos Pokemon/Move.
 public class PokemonRepository {
 
     private final MoveRepository moveRepository = new MoveRepository();

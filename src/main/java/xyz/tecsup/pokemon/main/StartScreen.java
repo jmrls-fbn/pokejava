@@ -13,16 +13,19 @@ import java.util.Objects;
 // Pantalla inicial: permite elegir una partida guardada del desplegable,
 // o crear una nueva ingresando nombre, género e inicial.
 public class StartScreen {
-    private JPanel mainPanel;
-    private JTextField nameTextField;
-    private JButton girlButton;
-    private JButton boyButton;
-    private JButton bulbasaurButton;
-    private JButton squirtleButton;
-    private JButton charmanderButton;
-    private JButton playButton;
-    private JComboBox<String> comboBox1; // desplegable de partidas guardadas
-    private JButton borrarPartidaButton;
+    // Componentes de la pantalla. Antes los instanciaba el GUI Designer de IntelliJ
+    // (StartScreen.form); ahora se construyen a mano en buildUi() para que el juego
+    // funcione con Swing puro, sin depender del binder de IntelliJ al empaquetar el JAR.
+    private final JPanel mainPanel = new JPanel(new GridBagLayout());
+    private final JTextField nameTextField = new JTextField();
+    private final JButton girlButton = new JButton("Chica");
+    private final JButton boyButton = new JButton("Chico");
+    private final JButton bulbasaurButton = new JButton("Venasaur");
+    private final JButton squirtleButton = new JButton("Blastoise");
+    private final JButton charmanderButton = new JButton("Charizard");
+    private final JButton playButton = new JButton("Jugar");
+    private final JComboBox<String> comboBox1 = new JComboBox<>(); // desplegable de partidas guardadas
+    private final JButton borrarPartidaButton = new JButton("Borrar Partida");
 
     private final PlayerRepository playerRepository = new PlayerRepository();
 
@@ -37,10 +40,71 @@ public class StartScreen {
     private static final String NEW_GAME_OPTION = "-- Nueva Partida --";
 
     public StartScreen() {
+        buildUi();
         loadSavedGames();
         initializeEvents();
         loadGenderIcons();
         loadPokemonIcons();
+    }
+
+    // Arma el layout que antes definía StartScreen.form: una grilla de 6 filas x
+    // 4 columnas (GridBagLayout). Cada fila replica la disposición original:
+    //   0: "Nombre"            + campo de texto
+    //   1: "Elije Personaje"
+    //   2: botón Chico         + botón Chica
+    //   3: "Elije a tu Pokemon"
+    //   4: Venasaur + Blastoise + Charizard (iniciales)
+    //   5: Borrar Partida + desplegable de partidas + Jugar
+    private void buildUi() {
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0xD1, 0xD1, 0xD9)),
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)));
+        mainPanel.setPreferredSize(new Dimension(435, 400));
+
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(5, 5, 5, 5);
+        c.fill = GridBagConstraints.HORIZONTAL;
+
+        // Fila 0: Nombre
+        c.gridx = 0; c.gridy = 0; c.gridwidth = 2; c.weightx = 0;
+        mainPanel.add(new JLabel("Nombre"), c);
+        c.gridx = 2; c.gridwidth = 2; c.weightx = 1;
+        mainPanel.add(nameTextField, c);
+
+        // Fila 1: Elije Personaje
+        c.gridx = 0; c.gridy = 1; c.gridwidth = 4; c.weightx = 0;
+        mainPanel.add(new JLabel("Elije Personaje"), c);
+
+        // Fila 2: Chico / Chica (botones que crecen verticalmente)
+        c.gridy = 2; c.weighty = 1; c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0; c.gridwidth = 2; c.weightx = 1;
+        mainPanel.add(boyButton, c);
+        c.gridx = 2; c.gridwidth = 2;
+        mainPanel.add(girlButton, c);
+
+        // Fila 3: Elije a tu Pokemon
+        c.fill = GridBagConstraints.HORIZONTAL; c.weighty = 0;
+        c.gridx = 0; c.gridy = 3; c.gridwidth = 4; c.weightx = 0;
+        mainPanel.add(new JLabel("Elije a tu Pokemon"), c);
+
+        // Fila 4: iniciales
+        c.gridy = 4; c.weighty = 1; c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0; c.gridwidth = 2; c.weightx = 1;
+        mainPanel.add(bulbasaurButton, c);
+        c.gridx = 2; c.gridwidth = 1;
+        mainPanel.add(squirtleButton, c);
+        c.gridx = 3; c.gridwidth = 1;
+        mainPanel.add(charmanderButton, c);
+
+        // Fila 5: Borrar Partida / desplegable / Jugar
+        c.fill = GridBagConstraints.HORIZONTAL; c.weighty = 0;
+        c.gridy = 5;
+        c.gridx = 0; c.gridwidth = 2; c.weightx = 1;
+        mainPanel.add(borrarPartidaButton, c);
+        c.gridx = 2; c.gridwidth = 1;
+        mainPanel.add(comboBox1, c);
+        c.gridx = 3; c.gridwidth = 1;
+        mainPanel.add(playButton, c);
     }
 
     // Carga los sprites de chico/chica como íconos de sus botones.
