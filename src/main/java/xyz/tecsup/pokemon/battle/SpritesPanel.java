@@ -89,10 +89,10 @@ public class SpritesPanel extends JPanel {
         JLabel nameLabel = new JLabel(pokemon.getName() + "  Nv." + pokemon.getLevel());
         nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
 
-        JProgressBar bar = new JProgressBar(0, pokemon.getBaseHp());
+        JProgressBar bar = new JProgressBar(0, pokemon.getMaxHp());
         bar.setValue(pokemon.getCurrentHp());
         bar.setStringPainted(true);
-        bar.setString(pokemon.getCurrentHp() + "/" + pokemon.getBaseHp());
+        bar.setString(pokemon.getCurrentHp() + "/" + pokemon.getMaxHp());
         bar.setForeground(new Color(80, 200, 80));
 
         if (pokemon == playerPokemon) {
@@ -129,9 +129,9 @@ public class SpritesPanel extends JPanel {
     // NO cambió) para refrescar las barras con el HP actualizado tras el ataque.
     public void updateHpBars() {
         playerHpBar.setValue(playerPokemon.getCurrentHp());
-        playerHpBar.setString(playerPokemon.getCurrentHp() + "/" + playerPokemon.getBaseHp());
+        playerHpBar.setString(playerPokemon.getCurrentHp() + "/" + playerPokemon.getMaxHp());
 
         enemyHpBar.setValue(enemyPokemon.getCurrentHp());
-        enemyHpBar.setString(enemyPokemon.getCurrentHp() + "/" + enemyPokemon.getBaseHp());
+        enemyHpBar.setString(enemyPokemon.getCurrentHp() + "/" + enemyPokemon.getMaxHp());
     }
 }

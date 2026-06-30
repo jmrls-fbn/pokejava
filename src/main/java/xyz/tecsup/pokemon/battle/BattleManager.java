@@ -38,7 +38,7 @@ public class BattleManager {
         StringBuilder message = new StringBuilder();
         Pokemon playerPokemon = getActivePokemon();
 
-        boolean playerGoesFirst = playerPokemon.getBaseSpeed() >= enemyPokemon.getBaseSpeed();
+        boolean playerGoesFirst = playerPokemon.getSpeed() >= enemyPokemon.getSpeed();
         Move enemyMove = chooseRandomMove(enemyPokemon);
 
         if (playerGoesFirst) {
@@ -84,7 +84,8 @@ public class BattleManager {
     }
 
     // Aplica un ataque: gasta PP, calcula y resta daño, y registra el mensaje
-    // correspondiente. Si el movimiento ya no tiene PP, no hace nada (mensaje de aviso).
+    // correspondiente (incluido el aviso de efectividad por tipos).
+    // Si el movimiento ya no tiene PP, no hace nada (mensaje de aviso).
     private void attack(Pokemon attacker, Pokemon defender, Move move, StringBuilder message) {
         if (!move.hasPp()) {
             message.append(attacker.getName()).append(" no tiene PP para ").append(move.getName()).append("!\n");
@@ -92,23 +93,47 @@ public class BattleManager {
         }
 
         move.use();
-        int damage = calculateDamage(attacker, defender, move);
+
+        double effectiveness = TypeChart.get().multiplier(move.getTypeId(), defender.getTypeIds());
+        int damage = calculateDamage(attacker, defender, move, effectiveness);
         defender.takeDamage(damage);
 
         message.append(attacker.getName())
                 .append(" usó ").append(move.getName())
                 .append("! Hizo ").append(damage).append(" de daño.\n");
 
+        // Aviso de efectividad según el multiplicador de tipos
+        if (effectiveness == 0) {
+            message.append("No afecta a ").append(defender.getName()).append("...\n");
+        } else if (effectiveness >= 2) {
+            message.append("¡Es supereficaz!\n");
+        } else if (effectiveness < 1) {
+            message.append("No es muy eficaz...\n");
+        }
+
         if (!defender.isAlive()) {
             message.append(defender.getName()).append(" se debilitó!\n");
         }
     }
 
-    // NOTE: fórmula de daño simplificada (sin tipos ni efectividad, según lo decidido
-    // para esta versión del proyecto): poder del movimiento + ataque del atacante
-    // - defensa del defensor. Nunca menos de 1, para que un ataque siempre haga algo.
-    private int calculateDamage(Pokemon attacker, Pokemon defender, Move move) {
-        int damage = move.getPower() + attacker.getBaseAttack() - defender.getBaseDefense();
+    // Fórmula de daño basada en la canónica de Pokémon:
+    //   base = ((2*Nivel/5 + 2) * Poder * Ataque/Defensa) / 50 + 2
+    // ajustada por:
+    //   - STAB: x1.5 si el tipo del movimiento coincide con un tipo del atacante.
+    //   - efectividad: multiplicador por tipos del defensor (ya calculado fuera).
+    //   - aleatorio: factor 0.85–1.0 para que el daño no sea siempre idéntico.
+    // Si el ataque no afecta (efectividad 0) el daño es 0; en cualquier otro caso
+    // es al menos 1, para que un golpe que conecta siempre haga algo.
+    private int calculateDamage(Pokemon attacker, Pokemon defender, Move move, double effectiveness) {
+        double base = ((2.0 * attacker.getLevel() / 5 + 2)
+                * move.getPower() * attacker.getAttack() / defender.getDefense()) / 50 + 2;
+
+        double stab = attacker.getTypeIds().contains(move.getTypeId()) ? 1.5 : 1.0;
+        double randomFactor = 0.85 + random.nextDouble() * 0.15;
+
+        if (effectiveness == 0) return 0;
+
+        int damage = (int) Math.floor(base * stab * effectiveness * randomFactor);
         return Math.max(damage, 1);
     }
 

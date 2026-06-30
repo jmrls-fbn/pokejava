@@ -31,9 +31,12 @@ class DatabaseInitializer {
     private static final List<TableLoad> LOADS = List.of(
             new TableLoad("pokemon",           "id, identifier, base_experience",                        "/db/data/pokemon.csv",           true),
             new TableLoad("stats",             "id, identifier",                                         "/db/data/stats.csv",             true),
-            new TableLoad("moves",             "id, identifier, power, pp",                              "/db/data/moves.csv",             true),
+            new TableLoad("types",             "id, identifier",                                         "/db/data/types.csv",             true),
+            new TableLoad("type_efficacy",     "damage_type_id, target_type_id, damage_factor",          "/db/data/type_efficacy.csv",     true),
+            new TableLoad("moves",             "id, identifier, power, pp, type_id",                     "/db/data/moves.csv",             true),
             new TableLoad("pokemon_stat",      "pokemon_id, stat_id, base_stat",                         "/db/data/pokemon_stat.csv",      true),
             new TableLoad("pokemon_moves",     "pokemon_id, move_id, level",                             "/db/data/pokemon_moves.csv",     true),
+            new TableLoad("pokemon_types",     "pokemon_id, type_id, slot",                              "/db/data/pokemon_types.csv",     true),
             new TableLoad("pokemon_evolution", "id, pokemon_id, evolved_species_id, minimum_level",      "/db/data/pokemon_evolution.csv", true),
             new TableLoad("player",            "id, name, gender",                                       "/db/data/player.csv",            false),
             new TableLoad("player_pokemon",    "id, player_id, pokemon_id, level, current_hp, team_slot", "/db/data/player_pokemon.csv",   false)
@@ -57,10 +60,11 @@ class DatabaseInitializer {
         System.out.println("Base de datos creada correctamente.");
     }
 
-    // Ejecuta db/schema.sql sentencia por sentencia. Es seguro partir por ";"
-    // porque el esquema no contiene literales con punto y coma.
+    // Ejecuta db/schema.sql sentencia por sentencia. Primero se quitan los
+    // comentarios (--) del script COMPLETO y luego se parte por ";": así un ";"
+    // que aparezca dentro de un comentario no rompe el split en sentencias.
     private static void createSchema(Connection con) throws SQLException {
-        String script = readResource("/db/schema.sql");
+        String script = stripSqlComments(readResource("/db/schema.sql"));
         try (Statement st = con.createStatement()) {
             for (String statement : script.split(";")) {
                 if (!statement.isBlank()) {
@@ -68,6 +72,18 @@ class DatabaseInitializer {
                 }
             }
         }
+    }
+
+    // Elimina las líneas que son comentarios (--). En este esquema los comentarios
+    // siempre ocupan su propia línea, así que basta con descartar las que empiezan por --.
+    private static String stripSqlComments(String script) {
+        StringBuilder sb = new StringBuilder();
+        for (String line : script.split("\n")) {
+            if (!line.trim().startsWith("--")) {
+                sb.append(line).append('\n');
+            }
+        }
+        return sb.toString();
     }
 
     private static void loadCsv(Connection con, TableLoad load) throws SQLException {

@@ -6,23 +6,32 @@ import java.util.List;
 // Se construye normalmente desde PokemonRepository, que llena estos datos consultando SQLite.
 public class Pokemon {
 
-    // Datos fijos de la especie: vienen de la base de datos y nunca cambian
-    // una vez creado el objeto (son las stats base, no las del Pokémon individual del jugador)
-    private final int id;                  // id de la especie en la tabla `pokemon`
+    // Datos fijos de la especie: stats BASE (de la tabla pokemon_stat) y tipos.
+    // No cambian una vez creado el objeto.
+    private final int id;
     private final String name;
     private final int baseHp;
     private final int baseAttack;
     private final int baseDefense;
     private final int baseSpeed;
-    private final List<Move> moves;        // hasta 4 movimientos disponibles a este nivel
+    private final List<Move> moves;          // hasta 4 movimientos disponibles a este nivel
+    private final List<Integer> typeIds;     // 1 o 2 tipos (FK a types): definen STAB y efectividad
 
-    //Datos que sí cambian durante la partida/batalla
-    private int level;
+    private final int level;
+
+    // Stats REALES a este nivel, calculadas a partir de las base con la fórmula
+    // canónica de Pokémon (sin IVs/EVs). Antes se usaban las base directamente,
+    // por lo que el nivel casi no influía; ahora un nivel más alto sube todas las stats.
+    private final int maxHp;
+    private final int attack;
+    private final int defense;
+    private final int speed;
+
     private int currentHp; // baja al recibir daño, se restaura al terminar la batalla
 
     public Pokemon(int id, String name, int baseHp, int baseAttack,
                    int baseDefense, int baseSpeed, int level,
-                   List<Move> moves) {
+                   List<Move> moves, List<Integer> typeIds) {
         this.id = id;
         this.name = name;
         this.baseHp = baseHp;
@@ -31,7 +40,17 @@ public class Pokemon {
         this.baseSpeed = baseSpeed;
         this.level = level;
         this.moves = moves;
-        this.currentHp = baseHp; // todo Pokémon empieza con la vida al máximo
+        this.typeIds = typeIds;
+
+        // Fórmula canónica (IV/EV = 0):
+        //   HP    = floor(2*Base*Nivel/100) + Nivel + 10
+        //   resto = floor(2*Base*Nivel/100) + 5
+        this.maxHp   = (2 * baseHp * level) / 100 + level + 10;
+        this.attack  = (2 * baseAttack * level) / 100 + 5;
+        this.defense = (2 * baseDefense * level) / 100 + 5;
+        this.speed   = (2 * baseSpeed * level) / 100 + 5;
+
+        this.currentHp = maxHp; // todo Pokémon empieza con la vida al máximo
     }
 
     // Usado por BattleManager para saber si este Pokémon puede seguir peleando
@@ -47,12 +66,12 @@ public class Pokemon {
         }
     }
 
-    // Suma una cantidad específica de HP, sin pasar el máximo (baseHp).
+    // Suma una cantidad específica de HP, sin pasar el máximo.
     // Pensado para usarse con movimientos que curan HP durante la batalla.
     public void heal(int amount) {
         currentHp += amount;
-        if (currentHp > baseHp) {
-            currentHp = baseHp;
+        if (currentHp > maxHp) {
+            currentHp = maxHp;
         }
     }
 
@@ -60,17 +79,20 @@ public class Pokemon {
     // el equipo se cura completamente entre combates.
     // TODO: reemplazar por un Centro Pokémon real (curación manual/opcional) más adelante.
     public void restoreHp() {
-        currentHp = baseHp;
+        currentHp = maxHp;
     }
 
     //Getters: solo lectura, ningún dato fijo se puede modificar desde afuera
-    public int getId()             { return id; }
-    public String getName()        { return name; }
-    public int getBaseHp()         { return baseHp; }
-    public int getBaseAttack()     { return baseAttack; }
-    public int getBaseDefense()    { return baseDefense; }
-    public int getBaseSpeed()      { return baseSpeed; }
-    public int getLevel()          { return level; }
-    public int getCurrentHp()      { return currentHp; }
-    public List<Move> getMoves()   { return moves; }
+    public int getId()                 { return id; }
+    public String getName()            { return name; }
+    public int getLevel()              { return level; }
+    public int getCurrentHp()          { return currentHp; }
+    public List<Move> getMoves()       { return moves; }
+    public List<Integer> getTypeIds()  { return typeIds; }
+
+    // Stats reales a este nivel (las que usan la fórmula de daño y la barra de HP)
+    public int getMaxHp()   { return maxHp; }
+    public int getAttack()  { return attack; }
+    public int getDefense() { return defense; }
+    public int getSpeed()   { return speed; }
 }

@@ -38,8 +38,11 @@ public class PokemonRepository {
                 // Solo trae los movimientos que el Pokémon ya puede usar a este nivel
                 List<Move> moves = getMoves(con, pokemonId, level);
 
+                // Tipos de la especie (1 o 2), para STAB y efectividad en batalla
+                List<Integer> typeIds = getTypeIds(con, pokemonId);
+
                 return new Pokemon(pokemonId, name, hp, attack, defense,
-                        speed, level, moves);
+                        speed, level, moves, typeIds);
             }
         } catch (SQLException e) {
             System.out.println("Error consultando pokemon: " + e.getMessage());
@@ -84,6 +87,21 @@ public class PokemonRepository {
             }
         }
         return list;
+    }
+
+    // Trae los tipos de un Pokémon (1 o 2 ids), ordenados por slot.
+    private List<Integer> getTypeIds(Connection con, int pokemonId) throws SQLException {
+        List<Integer> types = new ArrayList<>();
+        String sql = "SELECT type_id FROM pokemon_types WHERE pokemon_id = ? ORDER BY slot";
+
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, pokemonId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                types.add(rs.getInt("type_id"));
+            }
+        }
+        return types;
     }
 
     // Devuelve una lista simple (id, nombre) de los 151 Pokémon — usada por

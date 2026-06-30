@@ -9,11 +9,28 @@ CREATE TABLE stats (
     identifier TEXT
 );
 
+CREATE TABLE types (
+    id         INTEGER PRIMARY KEY,
+    identifier TEXT
+);
+
+-- Tabla de efectividad de tipos: cuánto daño hace un tipo atacante contra un
+-- tipo defensor, en porcentaje (200 = supereficaz, 50 = poco eficaz, 0 = no
+-- afecta). Solo se guardan los pares != 100; cualquier par ausente es neutral
+-- (100 = 1x), así la tabla es más chica y el código asume 1x por defecto.
+CREATE TABLE type_efficacy (
+    damage_type_id INTEGER NOT NULL REFERENCES types (id),
+    target_type_id INTEGER NOT NULL REFERENCES types (id),
+    damage_factor  INTEGER NOT NULL,
+    PRIMARY KEY (damage_type_id, target_type_id)
+);
+
 CREATE TABLE moves (
     id         INTEGER PRIMARY KEY,
     identifier TEXT,
     power      INTEGER,
-    pp         INTEGER
+    pp         INTEGER,
+    type_id    INTEGER REFERENCES types (id)
 );
 
 CREATE TABLE pokemon (
@@ -34,6 +51,15 @@ CREATE TABLE pokemon_moves (
     move_id    INTEGER NOT NULL REFERENCES moves (id),
     level      INTEGER NOT NULL,
     PRIMARY KEY (pokemon_id, move_id, level)
+);
+
+-- Tabla puente Pokémon <-> tipos. Cada especie tiene 1 o 2 tipos; slot indica
+-- el orden (1 = tipo principal, 2 = secundario).
+CREATE TABLE pokemon_types (
+    pokemon_id INTEGER NOT NULL REFERENCES pokemon (id),
+    type_id    INTEGER NOT NULL REFERENCES types (id),
+    slot       INTEGER NOT NULL,
+    PRIMARY KEY (pokemon_id, slot)
 );
 
 -- Cargada con datos pero todavía sin usar desde Java: el sistema de evolución

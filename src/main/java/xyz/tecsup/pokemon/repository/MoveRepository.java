@@ -14,7 +14,7 @@ public class MoveRepository {
 
     // Trae un movimiento por su id. Si no existe (o falla la conexión), devuelve null.
     public Move getById(int id) {
-        String sql = "SELECT id, identifier, power, pp FROM moves WHERE id = ?";
+        String sql = "SELECT id, identifier, power, pp, type_id FROM moves WHERE id = ?";
 
         try (Connection con = DatabaseConfig.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -27,7 +27,8 @@ public class MoveRepository {
                         rs.getInt("id"),
                         rs.getString("identifier"),
                         rs.getInt("power"),
-                        rs.getInt("pp")
+                        rs.getInt("pp"),
+                        rs.getInt("type_id")
                 );
             }
         } catch (SQLException e) {
