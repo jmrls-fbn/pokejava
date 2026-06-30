@@ -63,6 +63,25 @@ public class PlayerRepository {
         }
     }
 
+    // Devuelve el género ("chico"/"chica") del jugador, usado para elegir su
+    // sprite en el mapa. Devuelve null si no se encuentra el jugador.
+    public String getGender(int playerId) {
+        String sql = "SELECT gender FROM player WHERE id = ?";
+
+        try (Connection con = DatabaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, playerId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("gender");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error consultando género del jugador: " + e.getMessage());
+        }
+        return null;
+    }
+
     // Devuelve todas las partidas guardadas (id, name) para llenar el desplegable
     // de "Cargar Partida" en StartScreen. Ordenadas por id para que las más
     // antiguas aparezcan primero.

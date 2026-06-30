@@ -2,6 +2,7 @@ package xyz.tecsup.pokemon.entity;
 
 import xyz.tecsup.pokemon.control.KeyHandler;
 import xyz.tecsup.pokemon.map.CollisionChecker;
+import xyz.tecsup.pokemon.repository.PlayerRepository;
 import xyz.tecsup.pokemon.sounds.AudioManager;
 import java.awt.*;
 
@@ -19,7 +20,7 @@ public class Player {
 
     private final KeyHandler keyHandler;
     private final int TILE_SIZE;
-    private final PlayerAnimation animation = new PlayerAnimation();
+    private final PlayerAnimation animation;
 
     // Gestor de colisiones inyectado desde GamePanel (puede ser null si aún no se asignó)
     private CollisionChecker collisionChecker;
@@ -33,6 +34,10 @@ public class Player {
     public Player(KeyHandler keyHandler, int tileSize) {
         this.keyHandler = keyHandler;
         this.TILE_SIZE  = tileSize;
+
+        // El sprite del mapa se elige según el género del jugador activo.
+        String gender = new PlayerRepository().getGender(GameSession.playerId);
+        this.animation = new PlayerAnimation(gender);
 
         // Posición inicial fija del jugador al cargar el mapa
         worldX = TILE_SIZE * 5;

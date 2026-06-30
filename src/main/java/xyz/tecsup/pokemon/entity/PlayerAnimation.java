@@ -8,32 +8,48 @@ import java.util.Objects;
 
 // Se encarga únicamente de cargar, animar y dibujar el sprite del jugador.
 // Separar esto de Player.java mantiene esa clase enfocada solo en movimiento/lógica.
-// El mismo sprite de caminado se usa para cualquier jugador, sin importar el género.
+// El sprite del mapa depende del género elegido (chico/chica).
 public class PlayerAnimation {
 
-    // Hoja de sprites recortada: 4 filas (direcciones) x 4 columnas (frames)
-    // Orden de filas: 0=abajo, 1=izquierda, 2=derecha, 3=arriba
+    // Hoja de sprites: 4 filas (direcciones) x 4 columnas (frames de caminado).
+    // OJO: el orden de filas de las hojas GuySprites/GirlSprites es
+    // 0=abajo, 1=arriba, 2=izquierda, 3=derecha, distinto del orden de
+    // direcciones que usa el juego, por eso existe DIRECTION_TO_ROW abajo.
     private final BufferedImage[][] sprites = new BufferedImage[4][4];
 
-    // Tamaño de cada sprite individual dentro de la hoja PNG original
-    private final int SPRITE_WIDTH  = 64;
-    private final int SPRITE_HEIGHT = 64;
+    // Tamaño de cada sprite individual dentro de la hoja PNG original (16x24).
+    // La hoja completa mide 64x96 = 4 columnas x 4 filas.
+    private final int SPRITE_WIDTH  = 16;
+    private final int SPRITE_HEIGHT = 24;
+
+    // El juego maneja la dirección como 0=abajo, 1=izquierda, 2=derecha, 3=arriba
+    // (ver Player.java). Este arreglo traduce esa dirección a la fila correcta
+    // dentro de la hoja de sprites.
+    private static final int[] DIRECTION_TO_ROW = { 0, 2, 3, 1 };
 
     // Control del frame de animación actual
     private int currentFrame  = 0;
     private int frameCounter  = 0;
     private final int ANIMATION_SPEED = 10; // cuántos ticks de juego dura cada frame
 
-    public PlayerAnimation() {
-        loadSprites();
+    public PlayerAnimation(String gender) {
+        loadSprites(spriteSheetFor(gender));
+    }
+
+    // Elige la hoja de sprites según el género guardado del jugador.
+    // Cualquier valor distinto de "chica" cae en el sprite de chico (incluye null).
+    private String spriteSheetFor(String gender) {
+        if ("chica".equalsIgnoreCase(gender)) {
+            return "/PlayerSprites/GirlSprites.png";
+        }
+        return "/PlayerSprites/GuySprites.png";
     }
 
     // Carga la hoja de sprites desde resources y la recorta en 16 imágenes individuales
-    private void loadSprites() {
+    private void loadSprites(String path) {
         try {
             BufferedImage sheet = ImageIO.read(
-                    // TODO: "PlayerTest.png" es arte de prueba — reemplazar por la hoja de sprites definitiva.
-                    Objects.requireNonNull(getClass().getResourceAsStream("/PlayerSprites/PlayerTest.png"))
+                    Objects.requireNonNull(getClass().getResourceAsStream(path))
             );
             for (int row = 0; row < 4; row++) {
                 for (int col = 0; col < 4; col++) {
@@ -65,17 +81,21 @@ public class PlayerAnimation {
         }
     }
 
-    // Dibuja el sprite actual del jugador, escalado y centrado sobre su tile.
+    // Dibuja el sprite actual del jugador, escalado y alineado sobre su tile.
     // direction: 0=abajo, 1=izquierda, 2=derecha, 3=arriba
     // screenX/Y: posición donde se dibuja en la pantalla (no en el mundo)
     public void draw(Graphics2D g2, int direction, int screenX, int screenY, int tileSize) {
-        BufferedImage sprite = sprites[direction][currentFrame];
+        BufferedImage sprite = sprites[DIRECTION_TO_ROW[direction]][currentFrame];
         if (sprite == null) return;
 
-        // El sprite se dibuja más grande que el tile (1.5x) para que se vea mejor,
-        // pero centrado para que sus "pies" sigan alineados con la hitbox real.
-        int drawSize = (int) (tileSize * 1.5);
-        int offset   = (drawSize - tileSize) / 2;
-        g2.drawImage(sprite, screenX - offset, screenY - offset, drawSize, drawSize, null);
+        // El sprite (16x24) se dibuja conservando su proporción: ancho = un tile,
+        // alto proporcional (1.5 tiles). Se ancla por los "pies" al borde inferior
+        // del tile y se centra horizontalmente, para que la parte alta sobresalga
+        // hacia arriba sin desalinear la hitbox real del jugador.
+        int drawW = tileSize;
+        int drawH = drawW * SPRITE_HEIGHT / SPRITE_WIDTH;
+        int drawX = screenX + (tileSize - drawW) / 2;
+        int drawY = screenY + tileSize - drawH;
+        g2.drawImage(sprite, drawX, drawY, drawW, drawH, null);
     }
 }
