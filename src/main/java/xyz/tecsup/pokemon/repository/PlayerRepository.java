@@ -83,25 +83,6 @@ public class PlayerRepository {
         return list;
     }
 
-    // Devuelve el género del jugador ("chico"/"chica"), usado por GamePanel para
-    // elegir el sprite del personaje en el mapa. Si no se encuentra, devuelve "chico".
-    public String getGender(int playerId) {
-        String sql = "SELECT gender FROM player WHERE id = ?";
-
-        try (Connection con = DatabaseConfig.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setInt(1, playerId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return rs.getString("gender");
-            }
-        } catch (SQLException e) {
-            System.out.println("Error consultando género del jugador: " + e.getMessage());
-        }
-        return "chico";
-    }
-
     // Devuelve los Pokémon del equipo activo de un jugador (team_slot IS NOT NULL),
     // ordenados por su posición en el equipo (1, 2, 3...).
     // Cada fila: [id de player_pokemon, nombre de especie, nivel, hp_actual, pokemon_id]

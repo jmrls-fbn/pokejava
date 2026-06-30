@@ -3,10 +3,8 @@ package xyz.tecsup.pokemon.main;
 import xyz.tecsup.pokemon.sounds.AudioManager;
 import xyz.tecsup.pokemon.battle.BattleTrigger;
 import xyz.tecsup.pokemon.control.KeyHandler;
-import xyz.tecsup.pokemon.entity.GameSession;
 import xyz.tecsup.pokemon.entity.Player;
 import xyz.tecsup.pokemon.map.CollisionChecker;
-import xyz.tecsup.pokemon.repository.PlayerRepository;
 import xyz.tecsup.pokemon.map.GrassAnimation;
 import xyz.tecsup.pokemon.map.MapReader;
 import xyz.tecsup.pokemon.map.MapRenderer;
@@ -56,8 +54,7 @@ public class GamePanel extends JPanel implements Runnable {
         this.setFocusable(true);
         this.requestFocusInWindow();
 
-        String gender = new PlayerRepository().getGender(GameSession.playerId);
-        player = new Player(keyHandler, TILE_SIZE, gender);
+        player = new Player(keyHandler, TILE_SIZE);
 
         mapReader = new MapReader(
                 "/RouteSprites/Route.tmj",

@@ -19,7 +19,7 @@ public class Player {
 
     private final KeyHandler keyHandler;
     private final int TILE_SIZE;
-    private final PlayerAnimation animation;
+    private final PlayerAnimation animation = new PlayerAnimation();
 
     // Gestor de colisiones inyectado desde GamePanel (puede ser null si aún no se asignó)
     private CollisionChecker collisionChecker;
@@ -30,10 +30,9 @@ public class Player {
     private int lastTileY = -1;
     private boolean newTile = false;
 
-    public Player(KeyHandler keyHandler, int tileSize, String gender) {
+    public Player(KeyHandler keyHandler, int tileSize) {
         this.keyHandler = keyHandler;
         this.TILE_SIZE  = tileSize;
-        this.animation  = new PlayerAnimation(gender);
 
         // Posición inicial fija del jugador al cargar el mapa
         worldX = TILE_SIZE * 5;
