@@ -8,7 +8,9 @@
     <properties>
       <opaque value="true"/>
     </properties>
-    <border type="none"/>
+    <border type="line">
+      <color color="-3025959"/>
+    </border>
     <children>
       <component id="57362" class="javax.swing.JLabel">
         <constraints>

@@ -2,8 +2,11 @@ package xyz.tecsup.pokemon.main;
 
 import xyz.tecsup.pokemon.entity.GameSession;
 import xyz.tecsup.pokemon.repository.PlayerRepository;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,7 +26,6 @@ public class StartScreen {
 
     private final PlayerRepository playerRepository = new PlayerRepository();
 
-    // Mapea cada texto del desplegable a su id real de jugador en la base de datos
     private final List<Object[]> savedGames = new java.util.ArrayList<>();
 
     private String selectedGender = null;
@@ -37,6 +39,56 @@ public class StartScreen {
     public StartScreen() {
         loadSavedGames();
         initializeEvents();
+        loadGenderIcons();
+        loadPokemonIcons();
+    }
+
+    // Carga los sprites de chico/chica como íconos de sus botones.
+    // Se hace desde código (no desde el GUI Designer) porque el Designer
+    // no permitía asignar la imagen correctamente.
+    private void loadGenderIcons() {
+        BufferedImage boyImage = loadImage("/PlayerSprites/Chico.png");
+        BufferedImage girlImage = loadImage("/PlayerSprites/Chica.png");
+
+        if (boyImage != null) {
+            boyButton.setIcon(new ImageIcon(boyImage.getScaledInstance(80, 120, Image.SCALE_SMOOTH)));
+            boyButton.setText(null); // el sprite reemplaza el texto del botón
+        }
+        if (girlImage != null) {
+            girlButton.setIcon(new ImageIcon(girlImage.getScaledInstance(80, 120, Image.SCALE_SMOOTH)));
+            girlButton.setText(null);
+        }
+    }
+
+    private void loadPokemonIcons(){
+        BufferedImage venasaurImage = loadImage("/PokemonSprites/3.png");
+        BufferedImage blastoiseImage = loadImage("/PokemonSprites/9.png");
+        BufferedImage charizarImage = loadImage("/PokemonSprites/6.png");
+
+        if (venasaurImage != null){
+            bulbasaurButton.setIcon(new ImageIcon(venasaurImage.getScaledInstance(80,80, Image.SCALE_SMOOTH)));
+            bulbasaurButton.setText(null);
+        }
+        if (blastoiseImage != null){
+            squirtleButton.setIcon(new ImageIcon(blastoiseImage.getScaledInstance(80,80, Image.SCALE_SMOOTH)));
+            squirtleButton.setText(null);
+        }
+        if (charizarImage != null){
+            charmanderButton.setIcon(new ImageIcon(charizarImage.getScaledInstance(80,80, Image.SCALE_SMOOTH)));
+            charmanderButton.setText(null);
+        }
+    }
+
+    // Carga una imagen desde resources, devuelve null si no se encuentra
+    // (en vez de lanzar excepción) para que el resto de la pantalla siga
+    // funcionando aunque falte algún sprite.
+    private BufferedImage loadImage(String path) {
+        try {
+            return ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream(path)));
+        } catch (IOException | NullPointerException e) {
+            System.out.println("No se encontró la imagen: " + path);
+            return null;
+        }
     }
 
     // Llena el desplegable con las partidas existentes, más la opción de crear una nueva
@@ -47,7 +99,7 @@ public class StartScreen {
 
         for (Object[] row : playerRepository.getAllPlayers()) {
             savedGames.add(row);
-            comboBox1.addItem((String) row[1]); // nombre del jugador
+            comboBox1.addItem((String) row[1]);
         }
     }
 
@@ -77,8 +129,6 @@ public class StartScreen {
             markSelected(charmanderButton, bulbasaurButton, squirtleButton);
         });
 
-        // Si el jugador elige una partida del desplegable, deshabilitar los
-        // campos de creación (ya no aplican)
         comboBox1.addActionListener(e -> {
             boolean creatingNew = Objects.equals(comboBox1.getSelectedItem(), NEW_GAME_OPTION);
             setCreationFieldsEnabled(creatingNew);
@@ -89,8 +139,6 @@ public class StartScreen {
         borrarPartidaButton.addActionListener(e -> deleteSelectedGame());
     }
 
-    // Borra la partida actualmente elegida en el desplegable, pidiendo
-    // confirmación antes para evitar borrados accidentales.
     private void deleteSelectedGame() {
         String selectedOption = (String) comboBox1.getSelectedItem();
 
@@ -111,7 +159,7 @@ public class StartScreen {
             if (row[1].equals(selectedOption)) {
                 boolean deleted = playerRepository.deletePlayer((int) row[0]);
                 if (deleted) {
-                    loadSavedGames(); // refresca el desplegable sin la partida borrada
+                    loadSavedGames();
                     comboBox1.setSelectedItem(NEW_GAME_OPTION);
                 } else {
                     JOptionPane.showMessageDialog(mainPanel, "Error al borrar la partida.");
@@ -121,7 +169,6 @@ public class StartScreen {
         }
     }
 
-    // Habilita/deshabilita los campos de creación según si se eligió una partida existente
     private void setCreationFieldsEnabled(boolean enabled) {
         nameTextField.setEnabled(enabled);
         boyButton.setEnabled(enabled);
@@ -143,7 +190,6 @@ public class StartScreen {
         }
     }
 
-    // Decide si cargar una partida existente o crear una nueva, según el desplegable
     private void confirmSelection() {
         String selectedOption = (String) comboBox1.getSelectedItem();
 
@@ -155,8 +201,6 @@ public class StartScreen {
         }
     }
 
-    // Busca el id correspondiente al nombre elegido en el desplegable y lo
-    // asigna como jugador activo de la sesión, ignorando nombre/género/inicial
     private void loadExistingGame(String selectedName) {
         for (Object[] row : savedGames) {
             if (row[1].equals(selectedName)) {
@@ -168,7 +212,6 @@ public class StartScreen {
         JOptionPane.showMessageDialog(mainPanel, "No se pudo cargar esa partida.");
     }
 
-    // Valida los campos y crea un jugador nuevo en la base de datos
     private void createNewGame() {
         String name = nameTextField.getText().trim();
 

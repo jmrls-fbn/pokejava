@@ -38,7 +38,7 @@ public class GamePanel extends JPanel implements Runnable {
 
     private final MapReader mapReader;
     private final MapRenderer mapRenderer;
-    private CollisionChecker collisionChecker;
+    private final CollisionChecker collisionChecker;
 
     private final BattleTrigger battleTrigger = new BattleTrigger();
 
